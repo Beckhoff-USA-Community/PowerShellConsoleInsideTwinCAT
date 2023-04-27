@@ -6,7 +6,7 @@ Move files around, delete folders, set windows registeries, change network setti
 How easy is this to use?  
 Send the functionblock a string, or 1000 strings of powershell code via 1 method call. That's it.  
 
-What happens behind the hood?  
+How does this work?  
 Behind the sceens this program will copy your desired powershell code to a powershell file in windows. Then it creates a batch file. After the files are written, TwinCAT executes the batch file which then runs the powershell program with the correct policies. All this happens automaticlly so you can just focus on what powershell code you want it to execute.   
 
 

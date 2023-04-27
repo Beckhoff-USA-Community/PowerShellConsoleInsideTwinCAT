@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN" Id="{bb0bb8c9-51d4-4604-868f-f5d016f9a231}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	fbPowerShell:FB_PowerShell; 
+	xRunSample1:BOOL;
+	xRunSample2: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[//This must be called every PLC scan. 
+fbPowerShell(udiErrId=> , xBusy=> , xError=> );
+
+IF xRunSample1 AND NOT fbPowerShell.xBusy THEN //Start HERE!!!
+	xRunSample1:=FALSE;
+	fbPowerShell.PowerShellLine:='Write-Output  "Hello World!!!"';
+	fbPowerShell.PowerShellLine:='Read-Host -Prompt "Press Enter to exit"';
+END_IF
+
+
+IF xRunSample2 AND NOT fbPowerShell.xBusy THEN //Example varient swap. Copys a new PLC program into boot folder so the PLC project can change. Warning, does reboot PC.
+	xRunSample2:=FALSE;
+	fbPowerShell.PowerShellLine:='Remove-Item -path C:\TwinCAT\3.1\Boot\* -Exclude *.db -recurse';
+	fbPowerShell.PowerShellLine:='Copy-Item -Path "C:\Varients\VarientA\*" -Destination C:\TwinCAT\3.1\Boot -Recurse';
+	fbPowerShell.PowerShellLine:='Restart-Computer';
+END_IF
+
+
+
+(*
+For special characters. 
+$$ = $    
+$' = '    
+$r = carriage return
+https://infosys.beckhoff.com/english.php?content=../content/1033/tc3_plc_intro/2529327243.html&id=
+
+
+Helpful power shell code samples.
+To pause the powersshell to read the output values.  Read-Host -Prompt "Press Enter to exit"
+
+Get-NetIPAddress -AddressFamily IPv4
+New-NetIPAddress -InterfaceIndex 12 -IPAddress 192.168.0.1
+
+*)
+]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="107" Count="0" />
+      <LineId Id="63" Count="0" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="125" Count="1" />
+      <LineId Id="195" Count="1" />
+      <LineId Id="129" Count="6" />
+      <LineId Id="138" Count="0" />
+      <LineId Id="136" Count="0" />
+      <LineId Id="159" Count="0" />
+      <LineId Id="158" Count="0" />
+      <LineId Id="147" Count="0" />
+      <LineId Id="149" Count="0" />
+      <LineId Id="161" Count="0" />
+      <LineId Id="166" Count="2" />
+      <LineId Id="163" Count="0" />
+      <LineId Id="162" Count="0" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="171" Count="0" />
+      <LineId Id="173" Count="0" />
+      <LineId Id="157" Count="0" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="156" Count="0" />
+      <LineId Id="151" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

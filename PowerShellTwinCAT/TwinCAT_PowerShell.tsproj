@@ -26,7 +26,7 @@
 		</System>
 		<Plc>
 			<Project GUID="{0457BFE1-5B03-4EB1-98D6-5015805A514A}" Name="TwinCAT_PowerShellExample" PrjFilePath="TwinCAT_PowerShellExample\TwinCAT_PowerShellExample.plcproj" TmcFilePath="TwinCAT_PowerShellExample\TwinCAT_PowerShellExample.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e">
-				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="TwinCAT_PowerShellExample\TwinCAT_PowerShellExample.tmc" TmcHash="{1C7C376E-6A0C-45CA-B901-AF8E3E9F3B22}">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="TwinCAT_PowerShellExample\TwinCAT_PowerShellExample.tmc" TmcHash="{DB6D9A98-EBC1-1DFF-826B-8904E3416D2E}">
 					<Name>TwinCAT_PowerShellExample Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Contexts>

@@ -12,14 +12,14 @@ END_VAR
       <ST><![CDATA[//This must be called every PLC scan. 
 fbPowerShell(udiErrId=> , xBusy=> , xError=> );
 
-IF xRunSample1 AND NOT fbPowerShell.xBusy THEN //Start HERE!!!
+IF xRunSample1 THEN //Start HERE!!!
 	xRunSample1:=FALSE;
 	fbPowerShell.PowerShellLine:='Write-Output  "Hello World!!!"';
 	fbPowerShell.PowerShellLine:='Read-Host -Prompt "Press Enter to exit"';
 END_IF
 
 
-IF xRunSample2 AND NOT fbPowerShell.xBusy THEN //Example varient swap. Copys a new PLC program into boot folder so the PLC project can change. Warning, does reboot PC.
+IF xRunSample2 THEN //Example varient swap. Copys a new PLC program into boot folder so the PLC project can change. Warning, does reboot PC.
 	xRunSample2:=FALSE;
 	fbPowerShell.PowerShellLine:='Remove-Item -path C:\TwinCAT\3.1\Boot\* -Exclude *.db -recurse';
 	fbPowerShell.PowerShellLine:='Copy-Item -Path "C:\Varients\VarientA\*" -Destination C:\TwinCAT\3.1\Boot -Recurse';
@@ -49,8 +49,7 @@ New-NetIPAddress -InterfaceIndex 12 -IPAddress 192.168.0.1
       <LineId Id="107" Count="0" />
       <LineId Id="63" Count="0" />
       <LineId Id="102" Count="0" />
-      <LineId Id="125" Count="1" />
-      <LineId Id="195" Count="1" />
+      <LineId Id="206" Count="3" />
       <LineId Id="129" Count="6" />
       <LineId Id="138" Count="0" />
       <LineId Id="136" Count="0" />

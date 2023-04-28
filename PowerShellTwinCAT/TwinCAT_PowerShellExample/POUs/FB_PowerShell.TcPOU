@@ -52,7 +52,11 @@ VAR
 
 	
 	//File Write only stuff
-	sPowerShellFileName:STRING:='PowerShell.ps1';
+	sPowerShellFileName:STRING;
+	sPowerShellFileNamePartial_1:STRING:='PowerShell';
+	sPowerShellFileNamePartial_2:STRING;
+	sPowerShellFilePath:T_MAXSTRING;
+	iFileCounter:INT:=1;
 	sFileRoot: STRING := 'C:\PowerShellCommands\';
 	sFileName: STRING := 'PowerShell.ps1';
 	sHeader:T_MaxString;//Header inside file. Ideal for CSV files that need column names
@@ -65,8 +69,8 @@ VAR
 	FBStartProcess : NT_StartProcess;
 	psStep:INT;
 	bBlockAddingToPowerShell:BOOL;
-	//barrWriteBufferPowerShell: ARRAY[1..udiBufferSize] OF BYTE;
-	//udiWriteBufferPowerShellAddPos: UDINT := 1;
+	barrWriteBufferPowerShell: ARRAY[1..udiBufferSize] OF BYTE;
+	udiWriteBufferPowerShellAddPos: UDINT := 1;
 	bBatchFileIsCreated:BOOL;
 	//End Powershell stuff
 END_VAR
@@ -77,64 +81,65 @@ END_VAR
     <Implementation>
       <ST><![CDATA[(*
 Wrote by Shawn Sidelinger
-How this works is very important to understand. 
+How this works:
+Step 0: Buffer commands in a byte array.
 Step 1: create powershell file with desired powershell code.
 Step 2: create batch file to execute the powershell code.
 Step 3: execute batch file which runs powershell code
 
-Why this process matters. Well, the program usese the same batch file and same powershell file names. So if you try to run this a second time before the powershell has finished,
-you may run into problems. 
+Commands are buffered while the file write process is busy. Then executed in a new powershell file to reduce chances of an issue.
 *)
 
 CASE psStep OF
 0:
 	//Auto start writing powershell program when buffer has data.
 	FileWriteSequence();
-	bBlockAddingToPowerShell:=FALSE;
+	
 	IF (udiWriteBufferAddPos <> udiWriteBufferWritePos) THEN
-		sFileName:= sPowerShellFileName;
 		psStep:=psStep+10;
-		bBlockAddingToPowerShell:=TRUE;
-(*	ELSIF udiWriteBufferPowerShellAddPos > 1 THEN
+	ELSIF udiWriteBufferPowerShellAddPos > 1 THEN
 		M_LogData(ADR(barrWriteBufferPowerShell),udiWriteBufferPowerShellAddPos-1);		
-		udiWriteBufferPowerShellAddPos:=1;//Reset pointer tracker.*)
+		udiWriteBufferPowerShellAddPos:=1;//Reset pointer tracker.
+	END_IF
+	
+	IF psStep <> 0 THEN
+		sPowerShellFileNamePartial_2:=TO_STRING(iFileCounter);
+		sPowerShellFileName:=CONCAT(CONCAT(sPowerShellFileNamePartial_1,sPowerShellFileNamePartial_2),'.ps1');
+		sPowerShellFilePath:=CONCAT(sFileRoot,sPowerShellFileName);
+		sFileName:= sPowerShellFileName;
 	END_IF
 	
 	
 10: //Wait for powershell file to be done being written.
 	FileWriteSequence();
-	IF NOT fwBusy THEN	
+	IF NOT fwBusy AND NOT xError THEN	
 		IF bBatchFileIsCreated THEN
 			psStep:=psStep+20;
 		ELSE
 			psStep:=psStep+10;
 			sFileName:= 'Batch.bat';
 			BatchFileFullPath:=CONCAT(sFileRoot,sFileName);
-			M_LogString('PowerShell.exe -executionpolicy remotesigned -File ');//C:\TwinCAT\3.1\Target\Resource\VariantSwitch.ps1 %1');
-			M_LogString(sFileRoot);
-			M_LogString(sPowerShellFileName);
+			M_LogString('PowerShell.exe -executionpolicy remotesigned -File');//C:\TwinCAT\3.1\Target\Resource\VariantSwitch.ps1 %1');
+			//M_LogString(sFileRoot);
+			//M_LogString(sPowerShellFileName);
 			M_LogString(' %1');
 		END_IF
+	ELSIF xError THEN
+		psStep:=0;
 	END_IF
 	
 20: //Wait for Batch file to be done being written.
 	FileWriteSequence();
-	IF NOT fwBusy THEN
+	IF NOT fwBusy AND NOT xError  THEN
 		psStep:=psStep+10;
 		bBatchFileIsCreated:=TRUE;
+	ELSIF xError THEN
+		psStep:=0;
 	END_IF
 
 	
 30:
-	FBStartProcess(NETID := '',
-		PATHSTR := BatchFileFullPath,
-		DIRNAME := sFileRoot,
-		COMNDLINE := ,
-		START :=FALSE ,
-		TMOUT :=,
-		BUSY => ,
-		ERR => ,
-		ERRID => );
+	FBStartProcess(NETID := '',	START :=FALSE);
 	IF NOT fwBusy AND NOT FBStartProcess.BUSY THEN //Asume file is done being written
 		psStep:=psStep+10;	
 	END_IF
@@ -143,21 +148,26 @@ CASE psStep OF
 	FBStartProcess(NETID := '',
 		PATHSTR := BatchFileFullPath,
 		DIRNAME := sFileRoot,
-		COMNDLINE := ,
+		COMNDLINE := sPowerShellFilePath,
 		START :=TRUE ,
 		TMOUT :=,
 		BUSY => ,
-		ERR => ,
-		ERRID => );
+		ERR =>xError ,
+		ERRID => udiErrId);
 	IF NOT FBStartProcess.BUSY THEN //Asume file is done being written
 		psStep:=0;
+		iFileCounter:=iFileCounter+1;
+		IF iFileCounter > 10 THEN
+			iFileCounter:=1;
+		END_IF
 	END_IF
 
 END_CASE
 
 
 xBusy:=psStep<>0;
-FileWriteSequence();
+bBlockAddingToPowerShell:=xBusy;
+
 
 ]]></ST>
     </Implementation>
@@ -167,8 +177,8 @@ VAR_INPUT
 	sCommand:T_MaxSTRING;
 END_VAR
 VAR
-	//udiLength: UDINT;
-	//sChar: STRING(1);
+	udiLength: UDINT;
+	sChar: STRING(1);
 END_VAR
 
 
@@ -177,8 +187,8 @@ END_VAR
         <ST><![CDATA[IF NOT bBlockAddingToPowerShell THEN
 	M_LogString(sCommand);
 	M_LogAddChar('$r');//Add carriage return
-	M_LogAddChar('$l');//Add carriage return
-(*ELSE
+	//M_LogAddChar('$l');//Add carriage return
+ELSE
 	//If the current program is executing commands and is busy, lets buffer the new commands to be executed later. 
 	//Lot of code below, most of its copy and paste and overkill.
 	IF DINT_TO_UDINT(LEN(sCommand)) + udiWriteBufferPowerShellAddPos - 1 <= udiBufferSize THEN
@@ -204,14 +214,14 @@ END_VAR
 	ELSE
 			udiWriteBufferPowerShellAddPos:=1;
 	END_IF
-	sChar:='$l';
+	(*sChar:='$l';
 	MEMCPY(ADR(barrWriteBufferPowerShell[udiWriteBufferPowerShellAddPos]),ADR(sChar),1);
 	IF  udiWriteBufferPowerShellAddPos < udiBufferSize THEN
 			udiWriteBufferPowerShellAddPos:=udiWriteBufferPowerShellAddPos +1;
 	ELSE
 			udiWriteBufferPowerShellAddPos:=1;
-	END_IF
-	*)
+	END_IF*)
+	
 END_IF]]></ST>
       </Implementation>
     </Method>
@@ -877,25 +887,25 @@ END_VAR
     <LineIds Name="FB_PowerShell">
       <LineId Id="686" Count="0" />
       <LineId Id="781" Count="1" />
+      <LineId Id="964" Count="0" />
       <LineId Id="786" Count="0" />
       <LineId Id="783" Count="0" />
       <LineId Id="785" Count="0" />
-      <LineId Id="788" Count="0" />
-      <LineId Id="787" Count="0" />
       <LineId Id="789" Count="0" />
-      <LineId Id="688" Count="0" />
+      <LineId Id="962" Count="1" />
       <LineId Id="687" Count="0" />
       <LineId Id="428" Count="2" />
       <LineId Id="588" Count="0" />
       <LineId Id="599" Count="0" />
-      <LineId Id="584" Count="0" />
-      <LineId Id="608" Count="0" />
-      <LineId Id="585" Count="0" />
-      <LineId Id="598" Count="0" />
+      <LineId Id="584" Count="1" />
       <LineId Id="693" Count="0" />
       <LineId Id="695" Count="0" />
       <LineId Id="703" Count="0" />
-      <LineId Id="586" Count="1" />
+      <LineId Id="586" Count="0" />
+      <LineId Id="954" Count="1" />
+      <LineId Id="958" Count="2" />
+      <LineId Id="956" Count="1" />
+      <LineId Id="587" Count="0" />
       <LineId Id="431" Count="1" />
       <LineId Id="575" Count="0" />
       <LineId Id="447" Count="0" />
@@ -906,23 +916,28 @@ END_VAR
       <LineId Id="611" Count="3" />
       <LineId Id="705" Count="0" />
       <LineId Id="702" Count="0" />
+      <LineId Id="863" Count="1" />
       <LineId Id="448" Count="0" />
       <LineId Id="439" Count="1" />
       <LineId Id="615" Count="2" />
       <LineId Id="697" Count="0" />
+      <LineId Id="865" Count="1" />
       <LineId Id="449" Count="0" />
       <LineId Id="602" Count="0" />
       <LineId Id="461" Count="1" />
-      <LineId Id="491" Count="7" />
-      <LineId Id="490" Count="0" />
+      <LineId Id="494" Count="0" />
       <LineId Id="463" Count="2" />
       <LineId Id="468" Count="1" />
       <LineId Id="482" Count="7" />
       <LineId Id="481" Count="0" />
-      <LineId Id="499" Count="2" />
+      <LineId Id="499" Count="1" />
+      <LineId Id="949" Count="0" />
+      <LineId Id="951" Count="2" />
+      <LineId Id="501" Count="0" />
       <LineId Id="441" Count="1" />
       <LineId Id="444" Count="1" />
       <LineId Id="443" Count="0" />
+      <LineId Id="950" Count="0" />
       <LineId Id="426" Count="0" />
       <LineId Id="471" Count="0" />
       <LineId Id="470" Count="0" />

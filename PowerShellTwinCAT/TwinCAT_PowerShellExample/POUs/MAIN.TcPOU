@@ -6,6 +6,8 @@ VAR
 	fbPowerShell:FB_PowerShell; 
 	xRunSample1:BOOL;
 	xRunSample2: BOOL;
+	xRunSample3: BOOL;
+	xToggleValue:BOOL;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -23,7 +25,30 @@ IF xRunSample2 THEN //Example varient swap. Copys a new PLC program into boot fo
 	xRunSample2:=FALSE;
 	fbPowerShell.PowerShellLine:='Remove-Item -path C:\TwinCAT\3.1\Boot\* -Exclude *.db -recurse';
 	fbPowerShell.PowerShellLine:='Copy-Item -Path "C:\Varients\VarientA\*" -Destination C:\TwinCAT\3.1\Boot -Recurse';
-	fbPowerShell.PowerShellLine:='Restart-Computer';
+	fbPowerShell.PowerShellLine:='Restart-Computer'; 
+END_IF
+
+
+IF xRunSample3 THEN //Example to read or write to a PLC tag from powershell. If you need feedback from your Powershell code this is how you do it.
+	xRunSample3:=FALSE;
+	//Option #1. I personally prefer this because it requires no special setup. However, the code must be successful at finding the TwinCAT.Ads.dll. 
+	fbPowerShell.PowerShellLine:='$$Path = Get-Childitem –Path "C:\TwinCAT\AdsApi\.NET\" -Recurse -Include "TwinCAT.Ads.dll" | Where-Object {-not $$_.DirectoryName.Contains("CE")}';  //This is designed to find the ADS library for you. It may fail
+	fbPowerShell.PowerShellLine:='Add-Type -Path $$Path';  //UPDATE the Path here to were your ADS.net library files are. Just change $$Path to "full Path to TwinCAT.Ads.dll" 	
+	fbPowerShell.PowerShellLine:='$$tcClient = New-Object TwinCAT.Ads.TcAdsClient'; //Create TwinCAT client
+	fbPowerShell.PowerShellLine:='$$tcClient.Connect(851)'; //Connect to PLC
+	fbPowerShell.PowerShellLine:='$$value = $$tcClient.ReadSymbol("Main.xToggleValue", "Boolean","")';	//Read a tag and write it to "value"
+	fbPowerShell.PowerShellLine:='$$tcClient.WriteSymbol("Main.xToggleValue", -not $$value , 0)';	//write a tag by toggling it
+	fbPowerShell.PowerShellLine:='$$tcClient.Disconnect()';	 //Disconnect
+	
+	
+	//Option #2. Some beleive this to be the correct way but requires installing a module and setting an environment path in windows.
+	//Warning, requires TE1000 TwinCAT 3 | ADS Powershell module installed. Requires running special powershell commands to install.
+	(*
+	fbPowerShell.PowerShellLine:='$$session = New-TcSession -Port 851';
+	fbPowerShell.PowerShellLine:='$$symbol = $$session | get-TcSymbol -Path $'Main.xToggleValue$'';
+	//fbPowerShell.PowerShellLine:='$$symbol | Read-TcValue';
+	fbPowerShell.PowerShellLine:='$$symbol | Write-TcValue -Value 1 -force -Quiet';
+	*)
 END_IF
 
 
@@ -50,9 +75,23 @@ New-NetIPAddress -InterfaceIndex 12 -IPAddress 192.168.0.1
       <LineId Id="63" Count="0" />
       <LineId Id="102" Count="0" />
       <LineId Id="206" Count="3" />
-      <LineId Id="129" Count="6" />
-      <LineId Id="138" Count="0" />
-      <LineId Id="136" Count="0" />
+      <LineId Id="129" Count="2" />
+      <LineId Id="220" Count="8" />
+      <LineId Id="260" Count="0" />
+      <LineId Id="247" Count="0" />
+      <LineId Id="264" Count="0" />
+      <LineId Id="258" Count="0" />
+      <LineId Id="265" Count="0" />
+      <LineId Id="259" Count="0" />
+      <LineId Id="248" Count="0" />
+      <LineId Id="262" Count="1" />
+      <LineId Id="249" Count="0" />
+      <LineId Id="255" Count="1" />
+      <LineId Id="238" Count="0" />
+      <LineId Id="229" Count="1" />
+      <LineId Id="235" Count="2" />
+      <LineId Id="261" Count="0" />
+      <LineId Id="233" Count="0" />
       <LineId Id="159" Count="0" />
       <LineId Id="158" Count="0" />
       <LineId Id="147" Count="0" />

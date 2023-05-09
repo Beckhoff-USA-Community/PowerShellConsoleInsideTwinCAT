@@ -119,6 +119,7 @@ CASE psStep OF
 			psStep:=psStep+10;
 			sFileName:= 'Batch.bat';
 			BatchFileFullPath:=CONCAT(sFileRoot,sFileName);
+			M_LogString('Consolestate /Hide$r');//C:\TwinCAT\3.1\Target\Resource\VariantSwitch.ps1 %1');
 			M_LogString('PowerShell.exe -executionpolicy remotesigned -File');//C:\TwinCAT\3.1\Target\Resource\VariantSwitch.ps1 %1');
 			//M_LogString(sFileRoot);
 			//M_LogString(sPowerShellFileName);
@@ -913,7 +914,9 @@ END_VAR
       <LineId Id="701" Count="0" />
       <LineId Id="438" Count="0" />
       <LineId Id="609" Count="0" />
-      <LineId Id="611" Count="3" />
+      <LineId Id="611" Count="0" />
+      <LineId Id="1041" Count="0" />
+      <LineId Id="612" Count="2" />
       <LineId Id="705" Count="0" />
       <LineId Id="702" Count="0" />
       <LineId Id="863" Count="1" />

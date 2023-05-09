@@ -32,7 +32,7 @@ END_IF
 IF xRunSample3 THEN //Example to read or write to a PLC tag from powershell. If you need feedback from your Powershell code this is how you do it.
 	xRunSample3:=FALSE;
 	//Option #1. I personally prefer this because it requires no special setup. However, the code must be successful at finding the TwinCAT.Ads.dll. 
-	fbPowerShell.PowerShellLine:='$$Path = Get-Childitem –Path "C:\TwinCAT\AdsApi\.NET\" -Recurse -Include "TwinCAT.Ads.dll" | Where-Object {-not $$_.DirectoryName.Contains("CE")}';  //This is designed to find the ADS library for you. It may fail
+	fbPowerShell.PowerShellLine:='$$Path = Get-Childitem –Path "C:\TwinCAT\AdsApi\.NET\" -Recurse -Include "TwinCAT.Ads.dll" | Where-Object {-not $$_.DirectoryName.Contains("CE")}  | Select-Object -First 1';  //This is designed to find the ADS library for you. It may fail
 	fbPowerShell.PowerShellLine:='Add-Type -Path $$Path';  //UPDATE the Path here to were your ADS.net library files are. Just change $$Path to "full Path to TwinCAT.Ads.dll" 	
 	fbPowerShell.PowerShellLine:='$$tcClient = New-Object TwinCAT.Ads.TcAdsClient'; //Create TwinCAT client
 	fbPowerShell.PowerShellLine:='$$tcClient.Connect(851)'; //Connect to PLC
